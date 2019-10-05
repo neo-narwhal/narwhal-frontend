@@ -1,6 +1,6 @@
 <template>
   <div class="fill-parent d-flex justify-center align-center">
-    <v-card max-width="300" width="80%">
+    <v-card max-width="300">
       <v-tabs v-model="currentTab" fixed-tabs dark>
         <v-tab key="login" :disabled="isDataTransferring" class="font-weight-black" href="#tab-login">
           登入
@@ -39,6 +39,3 @@ export default {
   }
 }
 </script>
-
-<style>
-</style>
