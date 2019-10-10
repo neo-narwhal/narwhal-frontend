@@ -23,7 +23,7 @@ export default function createPrivateAPI (token) {
 
     async getAvailableServices () {
       const { data } = await httpClient.get('/api/services')
-      return data.services
+      return data
     }
   }
 }
