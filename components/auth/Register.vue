@@ -18,6 +18,7 @@
         :rules="inputs.email.rules"
         :error-messages="inputs.email.errorMessages"
         @input="inputs.email.errorMessages = []"
+        @focus="inputs.email.errorMessages = []"
         @keypress.enter="submit"
       />
       <v-text-field
@@ -30,6 +31,7 @@
         :rules="inputs.username.rules"
         :error-messages="inputs.username.errorMessages"
         @input="inputs.username.errorMessages = []"
+        @focus="inputs.username.errorMessages = []"
         @keypress.enter="submit"
       />
       <v-text-field
@@ -41,10 +43,11 @@
         :rules="inputs.password.rules"
         :error-messages="inputs.password.errorMessages"
         :disabled="isDataTransferring"
-        :append-icon="inputs.passwordVisible ? 'mdi-eye' : 'mdi-eye-off'"
-        :type="inputs.passwordVisible ? 'text' : 'password'"
-        @click:append="inputs.passwordVisible = !inputs.passwordVisible"
+        :append-icon="passwordVisible ? 'mdi-eye' : 'mdi-eye-off'"
+        :type="passwordVisible ? 'text' : 'password'"
+        @click:append="passwordVisible = !passwordVisible"
         @input="inputs.password.errorMessages = []"
+        @focus="inputs.password.errorMessages = []"
         @keypress.enter="submit"
       />
       <v-btn
@@ -55,7 +58,7 @@
         block
         @click="submit"
       >
-        登入
+        註冊
       </v-btn>
     </v-form>
   </div>
@@ -64,8 +67,8 @@
 <script>
 const validator = {
   required: input => !!input || '必填',
-  minLength: (input, limit) => input.length >= limit || `長度需大於等於 ${limit}`,
-  maxLength: (input, limit) => input.length <= limit || `長度需小於等於 ${limit}`,
+  minLength: (input, limit) => (input && input.length >= limit) || `長度需大於等於 ${limit}`,
+  maxLength: (input, limit) => (input && input.length <= limit) || `長度需小於等於 ${limit}`,
   alphabetNumber: input => /^[a-zA-Z0-9]*$/.test(input) || '僅允許英文字母與數字',
   email: input => /\S+@\S+\.\S+/.test(input) || '不正確的信箱格式'
 }
@@ -106,8 +109,7 @@ export default {
         }
       },
       passwordVisible: false,
-      isDataTransferring: false,
-      errorMessage: ''
+      isDataTransferring: false
     }
   },
   computed: {
@@ -124,7 +126,26 @@ export default {
     async submit () {
       if (!this.$refs.form.validate() || !this.canSubmit) { return }
       this.isDataTransferring = true
-      await new Promise(resolve => setTimeout(resolve, 3000))
+
+      try {
+        await this.$api.register({
+          email: this.inputs.email.value,
+          username: this.inputs.username.value,
+          password: this.inputs.password.value
+        })
+        this.$emit('registered')
+        this.$refs.form.reset()
+      } catch (e) {
+        const status = e.response.status
+        if (status === 409) {
+          this.inputs.email.errorMessages.push('信箱或使用者名稱已被註冊過')
+          this.inputs.username.errorMessages.push('信箱或使用者名稱已被註冊過')
+        } else {
+          this.inputs.email.errorMessages.push('未知錯誤')
+          this.inputs.username.errorMessages.push('未知錯誤')
+          this.inputs.password.errorMessages.push('未知錯誤')
+        }
+      }
       this.isDataTransferring = false
     }
   }

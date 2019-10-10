@@ -18,6 +18,7 @@
         :rules="inputs.email.rules"
         :error-messages="inputs.email.errorMessages"
         @input="inputs.email.errorMessages = []"
+        @focus="inputs.email.errorMessages = []"
         @keypress.enter="submit"
       />
       <v-text-field
@@ -29,10 +30,11 @@
         :rules="inputs.password.rules"
         :error-messages="inputs.password.errorMessages"
         :disabled="isDataTransferring"
-        :append-icon="inputs.passwordVisible ? 'mdi-eye' : 'mdi-eye-off'"
-        :type="inputs.passwordVisible ? 'text' : 'password'"
-        @click:append="inputs.passwordVisible = !inputs.passwordVisible"
+        :append-icon="passwordVisible ? 'mdi-eye' : 'mdi-eye-off'"
+        :type="passwordVisible ? 'text' : 'password'"
+        @click:append="passwordVisible = !passwordVisible"
         @input="inputs.password.errorMessages = []"
+        @focus="inputs.password.errorMessages = []"
         @keypress.enter="submit"
       />
       <v-btn
@@ -50,10 +52,12 @@
 </template>
 
 <script>
+import { mapActions } from 'vuex'
+
 const validator = {
   required: input => !!input || '必填',
-  minLength: (input, limit) => input.length >= limit || `長度需大於等於 ${limit}`,
-  maxLength: (input, limit) => input.length <= limit || `長度需小於等於 ${limit}`,
+  minLength: (input, limit) => (input && input.length >= limit) || `長度需大於等於 ${limit}`,
+  maxLength: (input, limit) => (input && input.length <= limit) || `長度需小於等於 ${limit}`,
   alphabetNumber: input => /^[a-zA-Z0-9]*$/.test(input) || '僅允許英文字母與數字',
   email: input => /\S+@\S+\.\S+/.test(input) || '不正確的信箱格式'
 }
@@ -98,11 +102,31 @@ export default {
     }
   },
   methods: {
+    ...mapActions([
+      'setToken'
+    ]),
     async submit () {
       if (!this.$refs.form.validate() || !this.canSubmit) { return }
       this.isDataTransferring = true
-      await new Promise(resolve => setTimeout(resolve, 3000))
-      this.inputs.email.errorMessages.push('waa')
+      try {
+        const token = await this.$api.login({
+          email: this.inputs.email.value,
+          password: this.inputs.password.value
+        })
+        this.setToken(token)
+        this.$api.injectPrivateAPI(token)
+        this.$router.replace('/projects')
+        this.$refs.form.reset()
+      } catch (e) {
+        const status = e.response.status
+        if (status === 401) {
+          this.inputs.email.errorMessages.push('信箱或密碼錯誤')
+          this.inputs.password.errorMessages.push('信箱或密碼錯誤')
+        } else {
+          this.inputs.email.errorMessages.push('未知錯誤')
+          this.inputs.password.errorMessages.push('未知錯誤')
+        }
+      }
       this.isDataTransferring = false
     }
   }
