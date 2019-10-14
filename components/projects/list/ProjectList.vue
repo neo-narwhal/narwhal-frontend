@@ -1,5 +1,11 @@
 <template>
-  <v-row class="px-3">
+  <div v-if="isLoading" style="height: 300px" class="d-flex justify-center align-center">
+    <v-progress-circular
+      indeterminate
+      color="primary"
+    />
+  </div>
+  <v-row v-else class="px-3">
     <v-col
       cols="12"
       sm="6"
@@ -29,6 +35,10 @@ export default {
     ProjectCreateButtonCard
   },
   props: {
+    isLoading: {
+      type: Boolean,
+      default: false
+    },
     projects: {
       type: Array,
       required: true,
