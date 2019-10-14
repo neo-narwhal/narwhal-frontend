@@ -12,7 +12,7 @@
         </v-icon>創建專案
       </v-card-title>
       <v-divider />
-      <ProjectEditor ref="projectEditor" v-model="projectData" :available-services="availableServices" :disabled="isDataTransferring" />
+      <ProjectEditor ref="projectEditor" v-model="projectData" :is-loading="isLoading" :available-services="availableServices" :disabled="isDataTransferring" />
       <v-divider />
       <v-card-actions>
         <v-spacer />
@@ -36,20 +36,27 @@ export default {
   data () {
     return {
       isDataTransferring: false,
+      isLoading: false,
       availableServices: [],
       projectData: null
     }
   },
   async created () {
-    console.log(ProjectEditor)
-    this.isDataTransferring = true
-    this.availableServices = await this.$api.getAvailableServices()
-    this.isDataTransferring = false
+    await this.getAvailableServices()
   },
   methods: {
-    createProject () {
+    async createProject () {
       if (!this.$refs.projectEditor.validate()) { return }
-      console.log(this.projectData)
+
+      const newProjectId = await this.$api.createProject(this.projectData)
+      console.log(newProjectId)
+    },
+    async getAvailableServices () {
+      this.isLoading = true
+      this.isDataTransferring = true
+      this.availableServices = await this.$api.getAvailableServices()
+      this.isDataTransferring = false
+      this.isLoading = false
     }
   }
 }
