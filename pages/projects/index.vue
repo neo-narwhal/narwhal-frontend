@@ -6,7 +6,7 @@
       </v-icon>專案列表
     </v-card-title>
     <v-divider />
-    <ProjectList :projects="projects" />
+    <ProjectList :is-loading="isLoadingProjects" :projects="projects" />
   </v-card>
 </template>
 
@@ -21,16 +21,23 @@ export default {
   },
   data () {
     return {
-      projects: []
+      projects: [],
+      isLoadingProjects: false
     }
   },
-  created () {
-    for (let i = 0; i < 23; i++) {
-      this.projects.push({
-        name: `專案 ${i}`,
-        id: `${Date.now()}`,
-        description: `專案 ${i} 的敘述敘述敘述敘述敘述敘述敘述敘述敘述敘述敘述敘述敘述敘述`
-      })
+  async created () {
+    await this.loadProjects()
+  },
+  methods: {
+    async loadProjects () {
+      this.isLoadingProjects = true
+      const projectIds = await this.$api.getProjectIds()
+      const projects = await Promise.all(projectIds.map(async (projectId) => {
+        const project = await this.$api.getProjectById(projectId)
+        return project
+      }))
+      this.isLoadingProjects = false
+      this.projects = projects
     }
   }
 }
