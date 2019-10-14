@@ -52,6 +52,11 @@ export default {
       showRegisteredSnackbar: false
     }
   },
+  created () {
+    if (this.$store.getters.isLoggedIn) {
+      this.$router.replace('/projects')
+    }
+  },
   methods: {
     registered () {
       this.showRegisteredSnackbar = true
