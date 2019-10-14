@@ -118,13 +118,18 @@ export default {
         this.$router.replace('/projects')
         this.$refs.form.reset()
       } catch (e) {
-        const status = e.response.status
-        if (status === 401) {
-          this.inputs.email.errorMessages.push('信箱或密碼錯誤')
-          this.inputs.password.errorMessages.push('信箱或密碼錯誤')
+        if (!e.response) {
+          this.inputs.email.errorMessages.push('網路錯誤')
+          this.inputs.password.errorMessages.push('網路錯誤')
         } else {
-          this.inputs.email.errorMessages.push('未知錯誤')
-          this.inputs.password.errorMessages.push('未知錯誤')
+          const status = e.response.status
+          if (status === 401) {
+            this.inputs.email.errorMessages.push('信箱或密碼錯誤')
+            this.inputs.password.errorMessages.push('信箱或密碼錯誤')
+          } else {
+            this.inputs.email.errorMessages.push('未知錯誤')
+            this.inputs.password.errorMessages.push('未知錯誤')
+          }
         }
       }
       this.isDataTransferring = false
