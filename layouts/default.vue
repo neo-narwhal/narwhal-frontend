@@ -26,7 +26,6 @@
 <script>
 export default {
   name: 'DefaultLayout',
-  middleware: 'isTokenValid',
   data () {
     return {
       iconSize: 48,
