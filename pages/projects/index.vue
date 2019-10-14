@@ -15,6 +15,7 @@ import ProjectList from '@/components/projects/list/ProjectList'
 
 export default {
   name: 'ProjectsPage',
+  middleware: 'isTokenValid',
   components: {
     ProjectList
   },
