@@ -1,5 +1,11 @@
 <template>
-  <div class="pa-4">
+  <div v-if="isLoading" style="height: 300px" class="d-flex justify-center align-center">
+    <v-progress-circular
+      indeterminate
+      color="primary"
+    />
+  </div>
+  <div v-else class="pa-4">
     <v-form ref="form" v-model="valid">
       <v-row>
         <v-col cols="12" sm="6">
@@ -30,8 +36,9 @@
           </div>
           <v-row>
             <v-col cols="4">
-              <div class="subheading font-weight-medium primary--text">
-                vCPU
+              <div class="subheading font-weight-medium primary--text d-flex align-center">
+                <span class="mr-1">vCPU</span>
+                <QuestionTooltip :text="`vCPU（顆/時）：${feeRate.cpu} 台幣`" />
               </div>
               <v-select
                 v-model="inputs.cpu.value"
@@ -43,8 +50,9 @@
               />
             </v-col>
             <v-col cols="4">
-              <div class="subheading font-weight-medium primary--text">
-                RAM
+              <div class="subheading font-weight-medium primary--text d-flex align-center">
+                <span class="mr-1">RAM</span>
+                <QuestionTooltip :text="`RAM（MB/時）：${feeRate.storage} 台幣`" />
               </div>
               <v-text-field
                 v-model="inputs.memory.value"
@@ -56,8 +64,9 @@
             </v-col>
 
             <v-col cols="4">
-              <div class="subheading font-weight-medium primary--text">
-                儲存空間
+              <div class="subheading font-weight-medium primary--text d-flex align-center">
+                <span class="mr-1">Disk</span>
+                <QuestionTooltip :text="`Disk（GB/時）：${feeRate.storage} 台幣（無法減少只能增加）`" />
               </div>
               <v-text-field
                 v-model="inputs.storage.value"
@@ -86,6 +95,25 @@
             />
           </ServiceSelect>
         </v-col>
+        <v-col cols="12">
+          <div class="subheading font-weight-medium primary--text">
+            花費試算
+          </div>
+          <div class="pl-3 subtitle-2 grey--text">
+            <div class="pt-2">
+              vCPU: {{ feeRate.cpu }} x {{ formdata.cpu }} = {{ costs.cpu }} 台幣/時
+            </div>
+            <div class="pt-2">
+              RAM: {{ feeRate.memory }} x {{ formdata.memory }} = {{ costs.memory }} 台幣/時
+            </div>
+            <div class="pt-2">
+              Disk: {{ feeRate.storage }} x {{ formdata.storage }} = {{ costs.storage }} 台幣/時
+            </div>
+            <div class="pt-2">
+              總計: {{ costs.cpu }} + {{ costs.memory }} + {{ costs.storage }} = <span class="primary--text">{{ costs.total }} 台幣/時</span>
+            </div>
+          </div>
+        </v-col>
       </v-row>
     </v-form>
   </div>
@@ -93,6 +121,7 @@
 
 <script>
 import ServiceSelect from './ServiceSelect'
+import QuestionTooltip from './QuestionTooltip'
 
 const validator = {
   required: input => !!input || '必填',
@@ -115,9 +144,14 @@ const validator = {
 export default {
   name: 'ProjectEditor',
   components: {
-    ServiceSelect
+    ServiceSelect,
+    QuestionTooltip
   },
   props: {
+    isLoading: {
+      type: Boolean,
+      default: false
+    },
     value: {
       type: Object,
       default: null
@@ -186,6 +220,11 @@ export default {
             () => validator.dockerPullCommand(this.inputs.serviceData.value.dockerPullCommand)
           ]
         }
+      },
+      feeRate: {
+        cpu: 1,
+        memory: 0.0001,
+        storage: 0.01
       }
     }
   },
@@ -197,6 +236,13 @@ export default {
         }
       }
       return this.inputs.serviceData.value.dockerPullCommand.split(' ').pop()
+    },
+    costs () {
+      const cpu = this.feeRate.cpu * this.formdata.cpu
+      const memory = this.feeRate.memory * this.formdata.memory
+      const storage = this.feeRate.storage * this.formdata.storage
+      const total = cpu + memory + storage
+      return { cpu, memory, storage, total }
     },
     formdata () {
       return {
