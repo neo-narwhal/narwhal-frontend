@@ -27,9 +27,16 @@ export default function createPrivateAPI (token) {
       return data
     },
 
-    async createProject (projectFormData) {
-      const { data } = await httpClient.post('/api/projects', qs.stringify(projectFormData))
-      return data.projectId
+    async createProject (projectData) {
+      await httpClient.post('/api/projects', qs.stringify(projectData))
+    },
+
+    async deleteProjectById (projectId) {
+      await httpClient.delete(`/api/projects/${projectId}`)
+    },
+
+    async updateProjectById (projectId, projectData) {
+      await httpClient.put(`/api/projects/${projectId}`, qs.stringify(projectData))
     },
 
     async getProjectIds () {
@@ -45,11 +52,16 @@ export default function createPrivateAPI (token) {
       newProjectObj.description = p.description
       newProjectObj.isCustom = Boolean(p.is_custom)
       newProjectObj.imageTag = p.image_tag
+      newProjectObj.dockerPullCommand = `docker pull ${p.image_tag}`
       newProjectObj.cpu = Number(p.cpu)
       newProjectObj.memory = Number(p.memory)
       newProjectObj.storage = Number(p.storage)
-
       return newProjectObj
+    },
+
+    async getUserData () {
+      const { data } = await httpClient.get('/api/users')
+      return data
     }
   }
 }

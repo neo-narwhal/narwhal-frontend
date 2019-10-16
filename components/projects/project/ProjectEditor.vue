@@ -13,10 +13,13 @@
             專案名稱
           </div>
           <v-text-field
-            v-model="inputs.name.value"
+            :value="value.name"
             :rules="inputs.name.rules"
-            :disabled="disabled"
+            :disabled="disabled || isEditMode"
+            :error-messages="inputs.name.errorMessages"
             counter="25"
+            @input="update('name', $event)"
+            @focus="inputs.name.errorMessages = []"
           />
         </v-col>
         <v-col cols="12" sm="6">
@@ -24,10 +27,12 @@
             專案敘述（選填）
           </div>
           <v-text-field
-            v-model="inputs.description.value"
+            :value="value.description"
             :rules="inputs.description.rules"
             :disabled="disabled"
+            :placeholder="descriptionPlaceholder"
             counter="50"
+            @input="update('description', $event)"
           />
         </v-col>
         <v-col cols="12">
@@ -41,12 +46,13 @@
                 <QuestionTooltip :text="`vCPU（顆/時）：${feeRate.cpu} 台幣`" />
               </div>
               <v-select
-                v-model="inputs.cpu.value"
+                :value="value.cpu"
                 prefix=" "
                 suffix="顆"
                 :rules="inputs.cpu.rules"
                 :items="[1,2]"
                 :disabled="disabled"
+                @input="update('cpu', $event)"
               />
             </v-col>
             <v-col cols="4">
@@ -55,11 +61,12 @@
                 <QuestionTooltip :text="`RAM（MB/時）：${feeRate.storage} 台幣`" />
               </div>
               <v-text-field
-                v-model="inputs.memory.value"
+                :value="value.memory"
                 prefix=" "
                 suffix="MB"
                 :rules="inputs.memory.rules"
                 :disabled="disabled"
+                @input="update('memory', $event)"
               />
             </v-col>
 
@@ -69,11 +76,12 @@
                 <QuestionTooltip :text="`Disk（GB/時）：${feeRate.storage} 台幣（無法減少只能增加）`" />
               </div>
               <v-text-field
-                v-model="inputs.storage.value"
+                :value="value.storage"
                 prefix=" "
                 suffix="GB"
                 :rules="inputs.storage.rules"
                 :disabled="disabled"
+                @input="update('storage', $event)"
               />
             </v-col>
           </v-row>
@@ -83,15 +91,19 @@
             選擇服務
           </div>
           <ServiceSelect
-            v-model="inputs.serviceData.value"
-            :disabled="disabled"
+            :is-custom="value.isCustom"
+            :docker-pull-command="value.dockerPullCommand"
+            :disabled="disabled || isEditMode"
             :available-services="availableServices"
+            @type-change="update('isCustom', $event)"
+            @docker-pull-command-change="update('dockerPullCommand', $event)"
+            @service-label-change="serviceLabel = $event"
           >
             <v-text-field
-              v-model="inputs.serviceData.value.dockerPullCommand"
+              :value="value.dockerPullCommand"
               class="hidden-input"
-              :rules="inputs.serviceData.rules"
-              :disabled="disabled"
+              :rules="inputs.dockerPullCommand.rules"
+              :disabled="disabled || isEditMode"
             />
           </ServiceSelect>
         </v-col>
@@ -101,13 +113,13 @@
           </div>
           <div class="pl-3 subtitle-2 grey--text">
             <div class="pt-2">
-              vCPU: {{ feeRate.cpu }} x {{ formdata.cpu }} = {{ costs.cpu }} 台幣/時
+              vCPU: {{ feeRate.cpu }} x {{ value.cpu }} = {{ costs.cpu }} 台幣/時
             </div>
             <div class="pt-2">
-              RAM: {{ feeRate.memory }} x {{ formdata.memory }} = {{ costs.memory }} 台幣/時
+              RAM: {{ feeRate.memory }} x {{ value.memory }} = {{ costs.memory }} 台幣/時
             </div>
             <div class="pt-2">
-              Disk: {{ feeRate.storage }} x {{ formdata.storage }} = {{ costs.storage }} 台幣/時
+              Disk: {{ feeRate.storage }} x {{ value.storage }} = {{ costs.storage }} 台幣/時
             </div>
             <div class="pt-2">
               總計: {{ costs.cpu }} + {{ costs.memory }} + {{ costs.storage }} = <span class="primary--text">{{ costs.total }} 台幣/時</span>
@@ -148,13 +160,25 @@ export default {
     QuestionTooltip
   },
   props: {
+    mode: {
+      type: String,
+      default: 'create'
+    },
     isLoading: {
       type: Boolean,
       default: false
     },
     value: {
       type: Object,
-      default: null
+      default: () => ({
+        name: '',
+        description: '',
+        cpu: 1,
+        memory: 512,
+        storage: 5,
+        isCustom: false,
+        dockerPullCommand: ''
+      })
     },
     availableServices: {
       type: Array,
@@ -168,102 +192,83 @@ export default {
   data () {
     return {
       valid: null,
+      serviceLabel: '',
       inputs: {
         name: {
-          value: '',
           rules: [
-            () => validator.required(this.inputs.name.value),
-            () => validator.projectName(this.inputs.name.value),
-            () => validator.maxLength(this.inputs.name.value, 25)
-          ]
+            () => validator.required(this.value.name),
+            () => validator.projectName(this.value.name),
+            () => validator.maxLength(this.value.name, 25)
+          ],
+          errorMessages: []
         },
         description: {
-          value: '',
           rules: [
-            () => validator.maxLength(this.inputs.description.value, 50)
+            () => validator.maxLength(this.value.description, 50)
           ]
         },
         cpu: {
-          value: 1,
           rules: [
-            () => validator.required(this.inputs.cpu.value),
-            () => validator.number(this.inputs.cpu.value),
-            () => validator.minInteger(this.inputs.cpu.value, 1),
-            () => validator.maxInteger(this.inputs.cpu.value, 2)
+            () => validator.required(this.value.cpu),
+            () => validator.number(this.value.cpu),
+            () => validator.minInteger(this.value.cpu, 1),
+            () => validator.maxInteger(this.value.cpu, 2)
           ]
         },
         memory: {
-          value: 512,
           rules: [
-            () => validator.required(this.inputs.memory.value),
-            () => validator.number(this.inputs.memory.value),
-            () => validator.minInteger(this.inputs.memory.value, 512),
-            () => validator.maxInteger(this.inputs.memory.value, 8192)
+            () => validator.required(this.value.memory),
+            () => validator.number(this.value.memory),
+            () => validator.minInteger(this.value.memory, 512),
+            () => validator.maxInteger(this.value.memory, 8192)
           ]
         },
         storage: {
-          value: 5,
           rules: [
-            () => validator.required(this.inputs.storage.value),
-            () => validator.number(this.inputs.storage.value),
-            () => validator.minInteger(this.inputs.storage.value, 2),
-            () => validator.maxInteger(this.inputs.storage.value, 25)
+            () => validator.required(this.value.storage),
+            () => validator.number(this.value.storage),
+            () => validator.minInteger(this.value.storage, 2),
+            () => validator.maxInteger(this.value.storage, 25)
           ]
         },
-        serviceData: {
-          value: {
-            idCustom: false,
-            dockerPullCommand: ''
-          },
+        dockerPullCommand: {
           rules: [
-            () => validator.serviceRequired(this.inputs.serviceData.value.dockerPullCommand),
-            () => validator.dockerPullCommand(this.inputs.serviceData.value.dockerPullCommand)
+            () => validator.serviceRequired(this.value.dockerPullCommand),
+            () => validator.dockerPullCommand(this.value.dockerPullCommand)
           ]
         }
       },
       feeRate: {
         cpu: 1,
         memory: 0.0001,
-        storage: 0.01
+        storage: 0.001
       }
     }
   },
   computed: {
-    imageTag () {
-      for (const rule of this.inputs.serviceData.rules) {
-        if (rule() !== true) {
-          return ''
-        }
-      }
-      return this.inputs.serviceData.value.dockerPullCommand.split(' ').pop()
+    isEditMode () { return this.mode === 'edit' },
+    descriptionPlaceholder () {
+      return `A ${this.value.isCustom ? 'Custom' : this.serviceLabel} project`
     },
     costs () {
-      const cpu = this.feeRate.cpu * this.formdata.cpu
-      const memory = this.feeRate.memory * this.formdata.memory
-      const storage = this.feeRate.storage * this.formdata.storage
-      const total = cpu + memory + storage
+      const cpu = +(this.feeRate.cpu * this.value.cpu).toFixed(12)
+      const memory = +(this.feeRate.memory * this.value.memory).toFixed(12)
+      const storage = +(this.feeRate.storage * this.value.storage).toFixed(12)
+      const total = +(cpu + memory + storage).toFixed(12)
       return { cpu, memory, storage, total }
-    },
-    formdata () {
-      return {
-        name: this.inputs.name.value,
-        description: this.inputs.description.value,
-        isCustom: this.inputs.serviceData.value.isCustom,
-        imageTag: this.imageTag,
-        cpu: this.inputs.cpu.value,
-        memory: this.inputs.memory.value,
-        storage: this.inputs.storage.value
-      }
-    }
-  },
-  watch: {
-    formdata (newValue) {
-      this.$emit('input', newValue)
     }
   },
   methods: {
+    update (key, value) {
+      this.$emit('input', { ...this.value, [key]: value })
+    },
     validate () {
       return this.$refs.form.validate()
+    },
+    handlerErrors (errorCode) {
+      if (errorCode === 409) {
+        this.inputs.name.errorMessages.push('專案名稱重複')
+      }
     }
   }
 }

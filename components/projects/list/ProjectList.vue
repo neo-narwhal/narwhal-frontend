@@ -15,12 +15,12 @@
     </v-col>
     <v-col
       v-for="(project, index) in projects"
-      :key="`project-card-${index}`"
+      :key="`project-card-col-${index}`"
       cols="12"
       sm="6"
       md="4"
     >
-      <ProjectCard v-bind="project" />
+      <ProjectCard :key="`project-card-${project.name}`" v-bind="project" @delete="$emit('refresh')" />
     </v-col>
   </v-row>
 </template>

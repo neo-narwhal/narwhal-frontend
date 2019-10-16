@@ -36,6 +36,7 @@ export default {
     async logout () {
       this.$api.removePrivateAPI()
       this.$store.dispatch('setToken', null)
+      this.$store.dispatch('setUser', null)
       this.$router.replace('/')
       await this.$nextTick()
       location.reload()

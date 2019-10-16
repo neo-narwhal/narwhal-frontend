@@ -103,7 +103,8 @@ export default {
   },
   methods: {
     ...mapActions([
-      'setToken'
+      'setToken',
+      'setUser'
     ]),
     async submit () {
       if (!this.$refs.form.validate() || !this.canSubmit) { return }
@@ -115,9 +116,12 @@ export default {
         })
         this.setToken(token)
         this.$api.injectPrivateAPI(token)
+        const user = await this.$api.getUserData()
+        this.setUser(user)
         this.$router.replace('/projects')
         this.$refs.form.reset()
       } catch (e) {
+        console.error(e)
         if (!e.response) {
           this.inputs.email.errorMessages.push('網路錯誤')
           this.inputs.password.errorMessages.push('網路錯誤')

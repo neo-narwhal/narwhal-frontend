@@ -9,15 +9,22 @@
       <v-card-title class="headline font-weight-bold py-5 primary--text">
         <v-icon color="primary">
           mdi-plus
-        </v-icon>創建專案
+        </v-icon>編輯專案
       </v-card-title>
       <v-divider />
-      <ProjectEditor ref="projectEditor" v-model="projectData" :is-loading="isLoading" :available-services="availableServices" :disabled="isDataTransferring" />
+      <ProjectEditor
+        ref="projectEditor"
+        v-model="projectData"
+        mode="edit"
+        :is-loading="isLoading"
+        :available-services="availableServices"
+        :disabled="isDataTransferring"
+      />
       <v-divider />
       <v-card-actions>
         <v-spacer />
-        <v-btn :loading="isDataTransferring" :disabled="isDataTransferring" color="primary" @click="createProject">
-          建立
+        <v-btn :loading="isDataTransferring" :disabled="isDataTransferring" color="primary" @click="updateProject">
+          更新
         </v-btn>
       </v-card-actions>
     </v-card>
@@ -28,7 +35,7 @@
 import ProjectEditor from '@/components/projects/project/ProjectEditor'
 
 export default {
-  name: 'ProjectCreatePage',
+  name: 'ProjectEditPage',
   middleware: 'isTokenValid',
   components: {
     ProjectEditor
@@ -38,40 +45,30 @@ export default {
       isDataTransferring: false,
       isLoading: false,
       availableServices: [],
-      projectData: undefined
+      projectData: null
     }
   },
   async created () {
     this.isLoading = true
     this.isDataTransferring = true
-    await this.getAvailableServices()
+    await this.loadAvailableServices()
+    await this.loadProjectData()
     this.isDataTransferring = false
     this.isLoading = false
   },
   methods: {
-    async createProject () {
+    async updateProject () {
       if (!this.$refs.projectEditor.validate()) { return }
 
-      const project = {
-        ...this.projectData,
-        description: this.projectData.description.trim() || this.$refs.projectEditor.descriptionPlaceholder,
-        imageTag: this.projectData.dockerPullCommand.split(' ').pop()
-      }
-
       this.isDataTransferring = true
-      try {
-        await this.$api.createProject(project)
-        this.$router.replace('/projects')
-      } catch (e) {
-        if (e.response) {
-          const status = e.response.status
-          this.$refs.projectEditor.handlerErrors(status)
-          this.isDataTransferring = false
-        }
-      }
+      await this.$api.updateProject(this.$route.params.id, this.projectData)
+      this.$router.replace('/projects')
     },
-    async getAvailableServices () {
+    async loadAvailableServices () {
       this.availableServices = await this.$api.getAvailableServices()
+    },
+    async loadProjectData () {
+      this.projectData = await this.$api.getProjectById(this.$route.params.id)
     }
   }
 }

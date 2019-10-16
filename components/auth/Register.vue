@@ -130,7 +130,7 @@ export default {
       try {
         await this.$api.register({
           email: this.inputs.email.value,
-          username: this.inputs.username.value,
+          username: this.inputs.username.value.toLowerCase(),
           password: this.inputs.password.value
         })
         this.$emit('registered')

@@ -6,11 +6,12 @@
       </v-icon>專案列表
     </v-card-title>
     <v-divider />
-    <ProjectList :is-loading="isLoadingProjects" :projects="projects" />
+    <ProjectList :is-loading="isLoadingProjects" :projects="projects" @refresh="loadProjects(true)" />
   </v-card>
 </template>
 
 <script>
+import { mapGetters } from 'vuex'
 import ProjectList from '@/components/projects/list/ProjectList'
 
 export default {
@@ -25,18 +26,28 @@ export default {
       isLoadingProjects: false
     }
   },
-  async created () {
+  computed: {
+    ...mapGetters([
+      'isLoggedIn'
+    ])
+  },
+  async mounted () {
     await this.loadProjects()
   },
   methods: {
-    async loadProjects () {
-      this.isLoadingProjects = true
+    async loadProjects (silent) {
+      if (!this.isLoggedIn) { return }
+      this.isLoadingProjects = !silent && true
       const projectIds = await this.$api.getProjectIds()
-      const projects = await Promise.all(projectIds.map(async (projectId) => {
-        const project = await this.$api.getProjectById(projectId)
-        return project
-      }))
-      this.isLoadingProjects = false
+      const projects = (await Promise.all(projectIds.map(async (projectId) => {
+        try {
+          const project = await this.$api.getProjectById(projectId)
+          return project
+        } catch (e) {
+          return null
+        }
+      }))).filter(a => !!a)
+      this.isLoadingProjects = !silent && false
       this.projects = projects
     }
   }
