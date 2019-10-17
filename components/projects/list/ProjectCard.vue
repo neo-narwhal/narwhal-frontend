@@ -21,14 +21,14 @@
                 <v-card flat color="#222222" width="100%">
                   <v-card-text class="py-0">
                     <div class="py-4" style="white-space: nowrap;overflow: auto; text-overflow: clip;">
-                      {{ `https://${user.username}.narwhal.ntut.club/${imageTag.split('/').pop().split(':').shift()}/${name}` }}
+                      {{ `http://${imageTag.split('/').pop().split(':').shift()}.wasay.site` }}
                     </div>
                   </v-card-text>
                 </v-card>
                 <div class="pt-5 d-flex justify-center">
                   <v-tooltip bottom color="grey darken-4">
                     <template v-slot:activator="{ on }">
-                      <v-btn :id="`btn-copy-${name}`" :data-clipboard-text="`https://${user.username}.narwhal.ntut.club/${imageTag.split('/').pop().split(':').shift()}/${name}`" icon v-on="on">
+                      <v-btn :id="`btn-copy-${name}`" :data-clipboard-text="`http://${imageTag.split('/').pop().split(':').shift()}.wasay.site`" icon v-on="on">
                         <v-icon>mdi-content-copy</v-icon>
                       </v-btn>
                     </template>
